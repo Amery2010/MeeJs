@@ -53,12 +53,13 @@
         return obj.nodeType === 1;
     };
 
-    isObject = function isObject(obj) {
-        return type(obj) === 'object';
+    isFunction = function isFunction(obj) {
+        return typeof obj === 'function';
     };
 
-    isFunction = function isFunction(obj) {
-        return type(obj) === 'function';
+    isObject = function isObject(obj) {
+        var type = typeof obj;
+        return type === 'function' || type === 'object' && !!obj;
     };
 
     isArrayLike = function isArrayLike(obj) {
@@ -76,7 +77,7 @@
     map = function map(obj, callback, scope) {
         var item, emptyObj;
 
-        if (emptyArray.isArray(obj)) {
+        if (Array.isArray(obj)) {
             return obj.map(callback, scope);
         } else {
             emptyObj = {};
@@ -91,7 +92,7 @@
     each = function each(obj, callback, scope) {
         var item;
 
-        if (emptyArray.isArray(obj)) {
+        if (Array.isArray(obj)) {
             obj.forEach(callback, scope);
         } else {
             for (item in obj) {
@@ -120,42 +121,49 @@
     var attr = (function () {
         var method,
             defaultMethod = function (elem, name, value) {
-                if (isNull(method)) {
-                    if (arguments.length === 1) {
-                        if (isObject(name)) {
-                            method = function (elem, name) {
-                                each(name, function (val, key) {
-                                    elem.setAttribute(key, val);
-                                });
-                            };
-                            method(elem, name);
-                        } else {
-                            return elem.getAttribute(name);
-                        }
+                if (isUndifined(value)) {
+                    if (isObject(name)) {
+                        each(name, function (val, key) {
+                            this.attr(key, val);
+                        }.bind(this));
+                        return this;
                     } else {
-                        elem.setAttribute(name, isFunction(value) ? value.call(this, elem, elem.getAttribute(name)) : value);
+                        return elem.getAttribute(name);
                     }
                 } else {
+                    method = function (elem, name, value) {
+                        elem.setAttribute(name, isFunction(value) ? value.call(this, elem, elem.getAttribute(name)) : value);
+                    };
                     method(elem, name, value);
                 }
             };
 
-        return function (elem, name, value) {
-            var len;
-            if (elem.length === 1) {
-                defaultMethod.call(this[0], name, value);
-            } else {
-                len = elem.length -1;
-                while (len--) {
-                    method(this[len], name, value);
+        return function (name, value) {
+            var len, cb;
+            cb = defaultMethod.call(this, this[0], name, value);
+
+            if (this.length > 1) {
+                if (isUndifined(cb)) {
+                    len = this.length;
+                    while (--len) {
+                        method.call(this, this[len], name, value);
+                    }
+                } else {
+                    return cb;
                 }
-                method = null;
             }
+            return this;
         };
     }());
 
-    Sugar = function (context) {
-        this.element = context;
+    Sugar = function (selector) {
+        var tmpObj = query(selector),
+            len = tmpObj.length;
+
+        this.length = len;
+        while (len--) {
+            this[len] = tmpObj[len];
+        }
     };
 
     Sugar.prototype = {
@@ -188,7 +196,7 @@
         }
     };
 
-    window.Sugar = $;
+    window.Sugar = Sugar;
     if (window.$ === undefined) {
         window.$ = $;
     }
