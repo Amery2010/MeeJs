@@ -125,7 +125,7 @@
                     if (isObject(name)) {
                         each(name, function (val, key) {
                             this.attr(key, val);
-                        }.bind(this));
+                        }, this);
                         return this;
                     } else {
                         return elem.getAttribute(name);
@@ -134,17 +134,15 @@
                     method = function (elem, name, value) {
                         elem.setAttribute(name, isFunction(value) ? value.call(this, elem, elem.getAttribute(name)) : value);
                     };
-                    method(elem, name, value);
                 }
             };
 
         return function (name, value) {
-            var len, cb;
-            cb = defaultMethod.call(this, this[0], name, value);
+            var len = this.length, cb;
 
-            if (this.length > 1) {
+            if (len > 0) {
+                cb = defaultMethod.call(this, this[0], name, value);
                 if (isUndifined(cb)) {
-                    len = this.length;
                     while (--len) {
                         method.call(this, this[len], name, value);
                     }
@@ -152,6 +150,7 @@
                     return cb;
                 }
             }
+
             return this;
         };
     }());
@@ -167,6 +166,12 @@
     };
 
     Sugar.prototype = {
+        each: function (callback) {
+            emptyArray.every.call(this, function(el, idx) {
+                return callback.call(el, idx, el) !== false;
+            });
+            return this;
+        },
         attr: attr,
         removeAttr: function (name) {
             this.element.removeAttribute(name);

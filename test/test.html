@@ -24,17 +24,6 @@
     </ul>
 
     <script>
-        var attrTest1 = $('ul.jquery > li');
-        console.time('jqattr');
-        attrTest1.attr('data-name', 'test');
-        attrTest1.attr('data-test');
-        attrTest1.attr({
-            'data-test': function (elem, value) {
-                return value -1;
-            },
-            'class': 'test'
-        });
-        console.timeEnd('jqattr');
 
         var attrTest2 = new Sugar('ul.sugar > li');
         console.time('sattr');
