@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>SugarJs Test</title>
     <script src="../src/sugar.js"></script>
-    <script src="../lib/jquery-2.1.4.js"></script>
 </head>
 <body>
     <ul class="jquery">
@@ -25,8 +24,10 @@
 
     <script>
 
-        var attrTest2 = new Sugar('ul.sugar > li');
-        console.time('sattr');
+        var attrTest = $('ul.sugar > li'),
+            attrTest2 = $('ul.sugar').find('li');
+        console.log(attrTest, attrTest2);
+        /*console.time('sattr');
         attrTest2.attr('data-name', 'test');
         attrTest2.attr('data-test');
         attrTest2.attr({
@@ -35,7 +36,7 @@
             },
             'class': 'test'
         });
-        console.timeEnd('sattr');
+        console.timeEnd('sattr');*/
     </script>
 </body>
 </html>
