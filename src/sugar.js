@@ -1,210 +1,112 @@
-/*jshint eqnull: true, browser: true*/
-
 /**
  * This is just a modern browser for operation on a simplified DOM syntactic sugar script
  *
  * @namespace SugarJs
  * @auhor Amery
- * @version v0.1.0
+ * @version v0.5.1
  */
 
 ;(function (window, document, undifined) {
     'use strict';
 
-    var $, Sugar, class2type, type, map, each, query, toArray,
-        isSugar, isWindow, isDocument, isUndifined, isNull, isElement, isFunction, isObject, isArrayLike, isString,
+    var Sugar, sugar, query, fragment, ready,
+        singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
+        fragmentRE = /^\s*<(\w+|!)[^>]*>/,
+        table = document.createElement('table'),
+        tableRow = document.createElement('tr'),
+        specialTags = {
+            'tr': document.createElement('tbody'),
+            'tbody': table, 'thead': table, 'tfoot': table,
+            'td': tableRow, 'th': tableRow,
+            '*': document.createElement('div')
+        },
         emptyArray = [],
-        slice = emptyArray.slice;
-
-    class2type = (function () {
-        var typeMap = {};
-
-        ['Boolean', 'Number', 'String', 'Function', 'Array', 'Date', 'RegExp', 'Object', 'Error'].map(function (type) {
-            typeMap['[object' + type + ']'] = type.toLowerCase();
-        });
-        return typeMap;
-    }());
-
-    type = function type(obj) {
-        return class2type[Object.prototype.toString.call(obj)] || 'object';
-    };
-
-    isSugar = function isSugar(obj) {
-        return obj instanceof Sugar;
-    };
-
-    isWindow = function isWindow(obj) {
-        return obj === obj.window;
-    };
-
-    isDocument = function isDocument(obj) {
-        return obj.nodeType === obj.DOCUMENT_NODE;
-    };
-
-    isUndifined = function isUndifined(obj) {
-        return obj === undifined;
-    };
-
-    isNull = function isNull(obj) {
-        return obj !== obj;
-    };
-
-    isElement = function isElement(obj) {
-        return obj.nodeType === 1;
-    };
-
-    isFunction = function isFunction(obj) {
-        return typeof obj === 'function';
-    };
-
-    isObject = function isObject(obj) {
-        var type = typeof obj;
-        return type === 'function' || type === 'object' && !!obj;
-    };
-
-    isArrayLike = function isArrayLike(obj) {
-        return 'length' in obj && type(obj.length) === 'number';
-    };
-
-    isString = function isString(str) {
-        return type(str) === 'string';
-    };
-
-    toArray = function toArray(obj) {
-        return slice.call(obj);
-    };
-
-    map = function map(obj, callback, scope) {
-        var item, emptyObj;
-
-        if (Array.isArray(obj)) {
-            return obj.map(callback, scope);
-        } else {
-            emptyObj = {};
-
-            for (item in obj) {
-                emptyObj[item] = callback.call(scope, obj[item], item, obj);
-            }
-            return emptyObj;
-        }
-    };
-
-    each = function each(obj, callback, scope) {
-        var item;
-
-        if (Array.isArray(obj)) {
-            obj.forEach(callback, scope);
-        } else {
-            for (item in obj) {
-                callback.call(scope, obj[item], item, obj);
-            }
-        }
-        return obj;
-    };
+        arrayProp = Array.prototype;
 
     query = function query(selector, context) {
         context = context || document;
 
         if (/^[\#.]?[\w-]+$/.test(selector)) {
             if (selector[0] === '.') {
-                return toArray(context.getElementsByClassName(selector.slice(1)));
-            }
-            if (selector[0] === '#') {
+                return context.getElementsByClassName(selector.slice(1));
+            } else if (selector[0] === '#') {
                 var element = context.getElementById(selector.slice(1));
                 return element ? [element] : [];
+            } else {
+                return context.getElementsByTagName(selector);
             }
-            return toArray(context.getElementsByTagName(selector));
         }
-        return toArray(context.querySelectorAll(selector));
+        return context.querySelectorAll(selector);
     };
 
-    var mathodIterator = function mathodIterator(getter, setter) {
-        return (function () {
-            var method,
-                defaultMethod = function (elem, name, value) {
-                    if (isUndifined(value)) {
-                        if (isObject(name)) {
-                            each(name, function (val, key) {
-                                this.attr(key, val);
-                            }, this);
-                            return this;
-                        } else {
-                            return elem[getter](name);
-                        }
-                    } else {
-                        method = function (elem, name, value) {
-                            elem[setter](name, isFunction(value) ? value.call(this, elem, elem[getter](name)) : value);
-                        };
-                    }
-                };
+    fragment = function fragment(html) {
+        var tagName = html.match(fragmentRE)[1],
+            container, dom;
 
-            return function (name, value) {
-                var len = this.length, cb;
-
-                if (len > 0) {
-                    cb = defaultMethod.call(this, this[0], name, value);
-                    if (isUndifined(cb)) {
-                        while (--len) {
-                            method.call(this, this[len], name, value);
-                        }
-                    } else {
-                        return cb;
-                    }
-                }
-
-                return this;
-            };
-        }());
+        if (singleTagRE.test(html)) {
+            return [document.createElement(tagName)];
+        } else {
+            if (!(tagName in specialTags)) {
+                tagName = '*';
+            }
+            container = specialTags[tagName];
+            container.innerHTML = '' + html;
+            dom = arrayProp.slice.call(container.childNodes);
+            container.innerHTML = '';
+            return dom;
+        }
     };
 
-    Sugar = function (selector) {
-        var tmpObj = query(selector),
-            len = tmpObj.length;
+    ready = function ready(callback) {
+        if (document.readyState !== 'loading') {
+            callback();
+        } else {
+            document.addEventListener('DOMContentLoaded', callback);
+        }
+    };
+
+    Sugar = function Sugar(query) {
+        var len = query.length;
 
         this.length = len;
-        while (len--) {
-            this[len] = tmpObj[len];
+        while(len--) {
+            this[len] = query.length;
         }
     };
 
     Sugar.prototype = {
-        each: function (callback) {
-            emptyArray.every.call(this, function(el, idx) {
-                return callback.call(el, idx, el) !== false;
-            });
-            return this;
-        },
-        attr: mathodIterator('getAttribute', 'setAttribute'),
-        removeAttr: function (name) {
-            this.element.removeAttribute(name);
-            return this;
-        }
+
     };
 
-    $ = function (selector, context) {
-        if (isString(selector)) {
-            if (context && isSugar(context)) {
-                return context.find(selector);
+    sugar = function sugar(selector, context) {
+        if (!selector) {
+            return new Sugar(emptyArray);
+        }
+
+        if (context) {
+            if (typeof context === 'string') {
+                return new Sugar(query(selector, context));
             } else {
-                return new Sugar(selector);
-            }
-        } else if (isSugar(selector)) {
-            return selector;
-        } else if (isArrayLike(selector)) {
-            return toArray(selector);
-        } else if (isObject(selector)) {
-            if (isElement(selector)) {
-                return new Sugar(selector);
-            } else if (isWindow(selector)) {
-                return window;
-            } else if (isDocument(selector)) {
-                return new Sugar(document);
+                context = context instanceof Sugar ? context : new Sugar(context);
+                return context.find(selector);
             }
         }
-    };
 
-    window.Sugar = Sugar;
-    if (window.$ === undefined) {
-        window.$ = $;
-    }
+        if (typeof selector === 'string') {
+            selector = selector.trim();
+            if (selector[0] === '<' && fragmentRE.test(selector)) {
+                return new Sugar(fragment(selector));
+            } else {
+                return new Sugar(query(selector));
+            }
+        } else if (selector instanceof Sugar) {
+            return selector;
+        } else if (typeof selector === 'function') {
+            return ready(selector);
+        } else if (arrayProp.isArray(selector)) {
+            return new Sugar(selector);
+        } else {
+            return new Sugar([selector]);
+        }
+    };
 }(window, document));
