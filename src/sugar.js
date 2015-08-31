@@ -118,42 +118,44 @@
         return toArray(context.querySelectorAll(selector));
     };
 
-    var attr = (function () {
-        var method,
-            defaultMethod = function (elem, name, value) {
-                if (isUndifined(value)) {
-                    if (isObject(name)) {
-                        each(name, function (val, key) {
-                            this.attr(key, val);
-                        }, this);
-                        return this;
+    var mathodIterator = function mathodIterator(getter, setter) {
+        return (function () {
+            var method,
+                defaultMethod = function (elem, name, value) {
+                    if (isUndifined(value)) {
+                        if (isObject(name)) {
+                            each(name, function (val, key) {
+                                this.attr(key, val);
+                            }, this);
+                            return this;
+                        } else {
+                            return elem[getter](name);
+                        }
                     } else {
-                        return elem.getAttribute(name);
+                        method = function (elem, name, value) {
+                            elem[setter](name, isFunction(value) ? value.call(this, elem, elem[getter](name)) : value);
+                        };
                     }
-                } else {
-                    method = function (elem, name, value) {
-                        elem.setAttribute(name, isFunction(value) ? value.call(this, elem, elem.getAttribute(name)) : value);
-                    };
+                };
+
+            return function (name, value) {
+                var len = this.length, cb;
+
+                if (len > 0) {
+                    cb = defaultMethod.call(this, this[0], name, value);
+                    if (isUndifined(cb)) {
+                        while (--len) {
+                            method.call(this, this[len], name, value);
+                        }
+                    } else {
+                        return cb;
+                    }
                 }
+
+                return this;
             };
-
-        return function (name, value) {
-            var len = this.length, cb;
-
-            if (len > 0) {
-                cb = defaultMethod.call(this, this[0], name, value);
-                if (isUndifined(cb)) {
-                    while (--len) {
-                        method.call(this, this[len], name, value);
-                    }
-                } else {
-                    return cb;
-                }
-            }
-
-            return this;
-        };
-    }());
+        }());
+    };
 
     Sugar = function (selector) {
         var tmpObj = query(selector),
@@ -172,7 +174,7 @@
             });
             return this;
         },
-        attr: attr,
+        attr: mathodIterator('getAttribute', 'setAttribute'),
         removeAttr: function (name) {
             this.element.removeAttribute(name);
             return this;
