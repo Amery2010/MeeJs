@@ -1,3 +1,4 @@
+/*jshint unused: vars*/
 /**
  * This is just a modern browser for operation on a simplified DOM syntactic sugar script
  *
@@ -9,8 +10,9 @@
 ;(function (window, document, undifined) {
     'use strict';
 
-    var Sugar, sugar, query, fragment, ready,
+    var Sugar, sugar, query, fragment, ready, filtered, matches,
         hasClass, addClass, removeClass, toggleClass,
+        children, parent, prev, next, siblings,
         singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
         fragmentRE = /^\s*<(\w+|!)[^>]*>/,
         div = document.createElement('div'),
@@ -65,8 +67,29 @@
         }
     };
 
+    filtered = function filtered(collection, handle) {
+        var elems = [];
+        collection.each(function (elem) {
+            emptyArray.forEach.call(handle.call(collection, elem), function (el) {
+                if (elems.indexOf(el) === -1 && el !== null) {
+                    elems.push(el);
+                }
+            });
+        });
+        return new Sugar(elems);
+    };
+
+    matches = (function () {
+        var matchesSelector = div.matches || div.matchesSelector || div.msMatchesSelector ||
+                div.mozMatchesSelector || div.webkitMatchesSelector || div.oMatchesSelector;
+
+        return function (elem, selector) {
+            return matchesSelector.call(elem, selector);
+        };
+    }());
+
     hasClass = (function () {
-        if (div.classList) {
+        if ('classList' in div) {
             return function (elem, className) {
                 return elem.classList.contains(className);
             };
@@ -78,7 +101,7 @@
     }());
 
     addClass = (function () {
-        if (div.classList) {
+        if ('classList' in div) {
             return function (elem, className) {
                 elem.classList.add(className);
             };
@@ -92,7 +115,7 @@
     }());
 
     removeClass = (function () {
-        if (div.classList) {
+        if ('classList' in div) {
             return function (elem, className) {
                 elem.classList.remove(className);
             };
@@ -104,17 +127,86 @@
     }());
 
     toggleClass = (function () {
-        if (div.classList) {
+        if ('classList' in div) {
             return function (elem, className) {
                 elem.classList.toggle(className);
             };
         } else {
             return function (elem, className) {
-                if (hasClass(elem, className)) {
-                    removeClass(elem, className);
+                var classes = elem.className.split(' '),
+                    existingIndex = classes.indexOf(className);
+
+                if (existingIndex === -1) {
+                    classes.push(className);
                 } else {
-                    addClass(elem, className);
+                    classes.splice(existingIndex, 1);
                 }
+
+                elem.className = classes.join(' ');
+            };
+        }
+    }());
+
+    children = (function () {
+        if ('children' in div) {
+            return function (elem) {
+                return elem.children;
+            };
+        } else {
+            return function (elem) {
+                return elem.childNodes;
+            };
+        }
+    }());
+
+    parent = (function () {
+        if ('parentElement' in div) {
+            return function (elem) {
+                return elem.parentElement;
+            };
+        } else {
+            return function (elem) {
+                return elem.parentNode;
+            };
+        }
+    }());
+
+    prev = (function () {
+        if ('previousElementSibling' in div) {
+            return function (elem) {
+                return elem.previousElementSibling;
+            };
+        } else {
+            return function (elem) {
+                return elem.previousSibling;
+            };
+        }
+    }());
+
+    next = (function () {
+        if ('nextElementSibling' in div) {
+            return function (elem) {
+                return elem.nextElementSibling;
+            };
+        } else {
+            return function (elem) {
+                return elem.nextSibling;
+            };
+        }
+    }());
+
+    siblings = (function () {
+        if ('parentElement' in div && 'children' in div) {
+            return function (elem) {
+                return emptyArray.filter.call(elem.parentElement.children, function (el) {
+                    return el !== elem;
+                });
+            };
+        } else {
+            return function (elem) {
+                return emptyArray.filter.call(elem.parentNode.childNodes, function (el) {
+                    return el !== elem;
+                });
             };
         }
     }());
@@ -140,29 +232,46 @@
             return new Sugar(emptyArray.slice.apply(this, arguments));
         },
         each: function (callback) {
-            var len = this.length;
-            while (len--) {
-                callback.call(this, this[len], len, this);
+            var i, len = this.length;
+            for (i = 0; i < len; i++) {
+                callback.call(this, this[i], i, this);
             }
             return this;
         },
         map: function (callback) {
-            var len = this.length;
-            while (len--) {
-                this[len] = callback.call(this, this[len], len, this);
+            var i, len = this.length;
+            for (i = 0; i < len; i++) {
+                this[i] = callback.call(this, this[i], i, this);
             }
             return this;
         },
+        is: function (selector) {
+            var len = this.length;
+            while (len--) {
+                if (matches(this[len], selector)) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        not: function (selector) {
+            return this.is(selector) ? false : true;
+        },
+        filter: function (selector) {
+            if (selector !== undifined) {
+                return new Sugar(emptyArray.filter.call(this,
+                    typeof selector === 'function' ? selector : function (elem) {
+                        return matches(elem, selector);
+                    })
+                );
+            } else {
+                return this;
+            }
+        },
         find: function (selector) {
-            var elems = [];
-            this.each(function (elem) {
-                emptyArray.forEach.call(query(selector, elem), function (el) {
-                    if (elems.indexOf(el) === -1) {
-                        elems.push(el);
-                    }
-                });
+            return filtered(this, function (elem) {
+                return query(selector, elem);
             });
-            return new Sugar(elems);
         },
         hasClass: function (className) {
             var len = this.length;
@@ -186,6 +295,31 @@
             return this.each(function (elem) {
                 toggleClass(elem, className);
             });
+        },
+        children: function (selector) {
+            return filtered(this, function (elem) {
+                return children(elem);
+            }).filter(selector);
+        },
+        parent: function (selector) {
+            return filtered(this, function (elem) {
+                return parent(elem);
+            }).filter(selector);
+        },
+        prev: function (selector) {
+            return filtered(this, function (elem) {
+                return prev(elem);
+            }).filter(selector);
+        },
+        next: function (selector) {
+            return filtered(this, function (elem) {
+                return next(elem);
+            }).filter(selector);
+        },
+        siblings: function (selector) {
+            return filtered(this, function (elem) {
+                return siblings(elem);
+            }).filter(selector);
         }
     };
 
@@ -224,5 +358,7 @@
     sugar.fn = Sugar.prototype;
 
     window.sugar = sugar;
-    if (!window.$) window.$ = sugar;
+    if (!window.$) {
+        window.$ = sugar;
+    }
 }(window, document));
