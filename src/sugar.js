@@ -1,4 +1,3 @@
-/*jshint unused: vars*/
 /**
  * This is just a modern browser for operation on a simplified DOM syntactic sugar script
  *
@@ -7,7 +6,7 @@
  * @version v0.5.1
  */
 
-;(function (window, document, undifined) {
+;(function (window, document, undefined) {
     'use strict';
 
     var Sugar, sugar, query, fragment, ready, filtered, matches,
@@ -23,6 +22,22 @@
             'tbody': table, 'thead': table, 'tfoot': table,
             'td': tableRow, 'th': tableRow, '*': div
         },
+        propMap = {
+            'tabindex': 'tabIndex',
+            'readonly': 'readOnly',
+            'for': 'htmlFor',
+            'class': 'className',
+            'maxlength': 'maxLength',
+            'cellspacing': 'cellSpacing',
+            'cellpadding': 'cellPadding',
+            'rowspan': 'rowSpan',
+            'colspan': 'colSpan',
+            'usemap': 'useMap',
+            'frameborder': 'frameBorder',
+            'contenteditable': 'contentEditable'
+        },
+        specialDom = ['col', 'colGroup', 'frameSet', 'html', 'head', 'style',
+                      'table', 'tBody', 'tFoot', 'tHead', 'title', 'tr'],
         emptyArray = [];
 
     query = function query(selector, context) {
@@ -231,6 +246,19 @@
         slice: function () {
             return new Sugar(emptyArray.slice.apply(this, arguments));
         },
+        get: function (idx) {
+            if (idx === undefined) {
+                return emptyArray.slice.call(this);
+            } else {
+                return this[idx >= 0 ? idx : idx + this.length];
+            }
+        },
+        eq: function (idx) {
+            return this.slice(idx, idx +1);
+        },
+        size: function () {
+            return this.length;
+        },
         each: function (callback) {
             var i, len = this.length;
             for (i = 0; i < len; i++) {
@@ -258,7 +286,7 @@
             return this.is(selector) ? false : true;
         },
         filter: function (selector) {
-            if (selector !== undifined) {
+            if (selector !== undefined) {
                 return new Sugar(emptyArray.filter.call(this,
                     typeof selector === 'function' ? selector : function (elem) {
                         return matches(elem, selector);
@@ -280,6 +308,7 @@
                     return true;
                 }
             }
+            return false;
         },
         addClass: function (className) {
             return this.each(function (elem) {
@@ -320,6 +349,63 @@
             return filtered(this, function (elem) {
                 return siblings(elem);
             }).filter(selector);
+        },
+        empty: function () {
+            return this.each(function (elem) {
+                elem.innerHTML = '';
+            });
+        },
+        html: function (html) {
+            if (html === undefined) {
+                return this.length ? this[0].innerHTML : undefined;
+            } else {
+                return this.each(function (elem) {
+                    elem.innerHTML = html;
+                });
+            }
+        },
+        text: function (text) {
+            if (text === undefined) {
+                return this.length ? this[0].textContent : undefined;
+            } else {
+                return this.each(function (elem) {
+                    elem.textContent = String(text);
+                });
+            }
+        },
+        attr: function (name, value) {
+            if (value === undefined) {
+                return this.length ? this[0].getAttribute(name) : undefined;
+            } else {
+                return this.each(function (elem) {
+                    elem.setAttribute(name, value);
+                });
+            }
+        },
+        hasAttr: function (name) {
+            var len = this.length;
+            while (len--) {
+                if (this[len].hasAttribute(name)) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        removeAttr: function (name) {
+            return this.each(function (elem) {
+                elem.removeAttribute(name);
+            });
+        },
+        prop: function (name, value) {
+            name = propMap[name] || name;
+
+            if (value === undefined) {
+                return this.length ? this[0][name] : undefined;
+            } else {
+                return this.each(function (elem) {
+                    elem[name] = value;
+                });
+            }
         }
     };
 
