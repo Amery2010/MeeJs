@@ -366,6 +366,13 @@
                 return siblings(elem);
             }).filter(selector);
         },
+        remove: function () {
+            return this.each(function (elem) {
+                if (elem.parentNode !== null) {
+                    elem.parentNode.removeChild(elem);
+                }
+            });
+        },
         empty: function () {
             return this.each(function (elem) {
                 elem.innerHTML = '';
@@ -426,7 +433,7 @@
         val: function (value) {
             if (value === undefined) {
                 if (this.length) {
-                    return undefined;
+                    return null;
                 } else {
                     if (this[0].multiple) {
                         var selected = [];
@@ -449,7 +456,7 @@
         css: function (name, value) {
             if (value === undefined) {
                 if (!this.length) {
-                    return undefined;
+                    return null;
                 }
 
                 if (typeof name === 'string') {
@@ -458,19 +465,19 @@
                 } else {
                     return this.each(function (elem) {
                         var currentStyle = elem.style.cssText.split(';'),
-                            stylesheet = {}, finalStyle = '', oldkey, newkey;
+                            stylesheet = {}, finalStyle = [], key;
 
                         currentStyle.forEach(function (style) {
                             style = style.split(':');
                             stylesheet[style[0]] = style[1];
                         });
-                        for (oldkey in name) {
-                            stylesheet[dasherize(name[oldkey])] = maybeAddPx(camelize(name[oldkey]), value);
+                        for (key in name) {
+                            stylesheet[dasherize(name[key])] = maybeAddPx(camelize(name[key]), value);
                         }
-                        for (newkey in name) {
-                            finalStyle += newkey + ':' + stylesheet[newkey] + ';';
+                        for (key in name) {
+                            finalStyle.push(key + ':' + stylesheet[key]);
                         }
-                        elem.style.cssText = finalStyle;
+                        elem.style.cssText = finalStyle.join(';');
                     });
                 }
             } else {
@@ -479,8 +486,93 @@
                     elem.style[name] = maybeAddPx(name, value);
                 });
             }
+        },
+        clone: function (deep) {
+            deep = deep === false ? false : true;
+            return this.map(function (elem) {
+                return elem.cloneNode(deep);
+            });
+        },
+        offset: function () {
+            if (this.length) {
+                var rect = this[0].getBoundingClientRect();
+                return {
+                    left: rect.left + document.body.scrollLeft,
+                    top: rect.top + document.body.scrollTop
+                };
+            } else {
+                return null;
+            }
+        },
+        offsetParent: function () {
+            return this.map(function (elem) {
+                return elem.offsetParent || elem;
+            });
+        },
+        scrollLeft: function (value) {
+            if (value === undefined) {
+                return this.length ? this[0].scrollLeft : null;
+            } else {
+                value = +value;
+                return this.each(function (elem) {
+                    elem.scrollLeft = value;
+                });
+            }
+        },
+        scrollTop: function (value) {
+            if (value === undefined) {
+                return this.length ? this[0].scrollTop : null;
+            } else {
+                value = +value;
+                return this.each(function (elem) {
+                    elem.scrollTop = value;
+                });
+            }
+        },
+        position: function () {
+            return this.length ? {left: this[0].offsetLeft, top: this[0].offsetTop} : null;
         }
     };
+
+    ['append', 'before', 'prepend', 'after'].forEach(function (mathod, idx) {
+        var mathodMap = {append: 'beforeend', before: 'beforebegin', prepend: 'afterbegin', after: 'afterend'};
+
+        Sugar.prototype[mathod] = function (html) {
+            return this.each(function (target) {
+                if (typeof html === 'string') {
+                    target.insertAdjacentHTML(mathodMap[mathod], html);
+                } else {
+                    var parent = idx % 2 ? target.parentNode : target,
+                        nodeList;
+
+                    if (html instanceof Sugar) {
+                        nodeList = emptyArray.map.call(html, function (node) {
+                            return node.cloneNode(true);
+                        });
+                    } else {
+                        nodeList = [html.cloneNode(true)];
+                    }
+
+                    target = idx === 3 ? target.nextSibling :
+                        idx === 2 ? target.firstChild :
+                        idx === 1 ? target : null;
+
+                    emptyArray.forEach.call(nodeList, function (node) {
+                        parent.insertBefore(node, target);
+                    });
+                }
+            });
+        };
+
+        Sugar.prototype[idx % 2 ? 'insert' + (idx -1 ? 'Before' : 'After') : mathod + 'To'] = function (nodeList) {
+            if (!(nodeList instanceof Sugar)) {
+                nodeList = new Sugar(nodeList.length ? nodeList : [nodeList]);
+            }
+
+			nodeList[mathod](this);
+            return this;
+		};
+    });
 
     sugar = function sugar(selector, context) {
         if (!selector) {
