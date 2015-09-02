@@ -9,9 +9,11 @@
 ;(function (window, document, undefined) {
     'use strict';
 
-    var Sugar, sugar, query, fragment, ready, filtered, matches,
+    var Sugar, sugar, query, fragment, camelize, dasherize, maybeAddPx,
+        ready, filtered, matches,
         hasClass, addClass, removeClass, toggleClass,
         children, parent, prev, next, siblings,
+        queryRE = /^[\#.]?[\w-]+$/,
         singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
         fragmentRE = /^\s*<(\w+|!)[^>]*>/,
         div = document.createElement('div'),
@@ -36,14 +38,14 @@
             'frameborder': 'frameBorder',
             'contenteditable': 'contentEditable'
         },
-        specialDom = ['col', 'colGroup', 'frameSet', 'html', 'head', 'style',
-                      'table', 'tBody', 'tFoot', 'tHead', 'title', 'tr'],
+        cssNumber = ['columnCount', 'columns', 'fontWeight', 'lineHeight', 'opacity', 'zIndex', 'zoom'],
+        // specialDom = ['col', 'colGroup', 'frameSet', 'html', 'head', 'style', 'table', 'tBody', 'tFoot', 'tHead', 'title', 'tr'],
         emptyArray = [];
 
     query = function query(selector, context) {
         context = context || document;
 
-        if (/^[\#.]?[\w-]+$/.test(selector)) {
+        if (queryRE.test(selector)) {
             if (selector[0] === '.') {
                 return context.getElementsByClassName(selector.slice(1));
             } else if (selector[0] === '#') {
@@ -74,6 +76,20 @@
         }
     };
 
+    camelize = function camelize(str) {
+        return str.replace(/-+(.)?/g, function (match, chr) {
+            return chr ? chr.toUpperCase() : '';
+        });
+    };
+
+    dasherize = function decamelize(str) {
+        return /[A-Z]/g.test(str) ? str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase() : str;
+    };
+
+    maybeAddPx = function maybeAddPx(name, value) {
+        return (typeof value === 'number' && cssNumber.indexOf(name) === -1) ? value + 'px' : value;
+    };
+
     ready = function ready(callback) {
         if (document.readyState !== 'loading') {
             callback();
@@ -95,8 +111,8 @@
     };
 
     matches = (function () {
-        var matchesSelector = div.matches || div.matchesSelector || div.msMatchesSelector ||
-                div.mozMatchesSelector || div.webkitMatchesSelector || div.oMatchesSelector;
+        var matchesSelector = div.matches || div.matchesSelector ||
+                div.webkitMatchesSelector || div.mozMatchesSelector || div.msMatchesSelector;
 
         return function (elem, selector) {
             return matchesSelector.call(elem, selector);
@@ -404,6 +420,63 @@
             } else {
                 return this.each(function (elem) {
                     elem[name] = value;
+                });
+            }
+        },
+        val: function (value) {
+            if (value === undefined) {
+                if (this.length) {
+                    return undefined;
+                } else {
+                    if (this[0].multiple) {
+                        var selected = [];
+                        emptyArray.forEach.call(this[0].options, function (opt) {
+                            if (opt.selected) {
+                                selected.push(opt.value);
+                            }
+                        });
+                        return selected;
+                    } else {
+                        return this[0].value;
+                    }
+                }
+            } else {
+                return this.each(function (elem) {
+                    elem.value = value;
+                });
+            }
+        },
+        css: function (name, value) {
+            if (value === undefined) {
+                if (!this.length) {
+                    return undefined;
+                }
+
+                if (typeof name === 'string') {
+                    name = camelize(name);
+                    return this[0].style[name] || window.getComputedStyle(this[0], null).getPropertyValue(name);
+                } else {
+                    return this.each(function (elem) {
+                        var currentStyle = elem.style.cssText.split(';'),
+                            stylesheet = {}, finalStyle = '', oldkey, newkey;
+
+                        currentStyle.forEach(function (style) {
+                            style = style.split(':');
+                            stylesheet[style[0]] = style[1];
+                        });
+                        for (oldkey in name) {
+                            stylesheet[dasherize(name[oldkey])] = maybeAddPx(camelize(name[oldkey]), value);
+                        }
+                        for (newkey in name) {
+                            finalStyle += newkey + ':' + stylesheet[newkey] + ';';
+                        }
+                        elem.style.cssText = finalStyle;
+                    });
+                }
+            } else {
+                return this.each(function (elem) {
+                    name = camelize(name);
+                    elem.style[name] = maybeAddPx(name, value);
                 });
             }
         }
