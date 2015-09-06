@@ -10,7 +10,8 @@
     'use strict';
 
     var Sugar, sugar, query, fragment, camelize, dasherize, maybeAddPx,
-        ready, filtered, expose, matches, iterate, getHeightOrWeight, getHeightOrWeightWithMargin,
+        ready, filtered, expose, matches, iterate, getContent,
+        getHeightOrWeight, getHeightOrWeightWithMargin,
         hasClass, addClass, removeClass, toggleClass,
         children, parent, prev, next, siblings,
         queryRE = /^[\#.]?[\w-]+$/,
@@ -119,18 +120,20 @@
     };
 
     getHeightOrWeight = function getHeightOrWeight(elem, type) {
+        var style = window.getComputedStyle(elem, null);
         if (type === 'Height') {
-            return elem.clientHeight - (elem.style.paddingTop || 0) - (elem.style.paddingBottom || 0);
+            return elem.clientHeight - parseFloat(style.paddingTop, 10) - parseFloat(style.paddingBottom, 10);
         } else {
-            return elem.clientWeight - (elem.style.paddingLeft || 0) - (elem.style.paddingRight || 0);
+            return elem.clientWeight - parseFloat(style.paddingLeft, 10) - parseFloat(style.paddingRight, 10);
         }
     };
 
     getHeightOrWeightWithMargin = function getHeightOrWeightWithMargin(elem, type) {
+        var style = window.getComputedStyle(elem, null);
         if (type === 'Height') {
-            return elem.offsetHeight + (elem.style.marginTop || 0) + (elem.style.marginBottom || 0);
+            return elem.offsetHeight + parseFloat(style.marginTop, 10) + parseFloat(style.marginBottom, 10);
         } else {
-            return elem.offsetWeight + (elem.style.marginLeft || 0) + (elem.style.marginRight || 0);
+            return elem.offsetWeight + parseFloat(style.marginLeft, 10) + parseFloat(style.marginRight, 10);
         }
     };
 
@@ -147,6 +150,15 @@
         } else {
             return callback(elem, type);
         }
+    };
+
+    getContent = function getContent(content) {
+        if (content instanceof Sugar) {
+            content = content[0];
+        } else if (typeof content === 'string') {
+            content = fragment(content);
+        }
+        return content;
     };
 
     matches = (function () {
@@ -410,11 +422,15 @@
                 return siblings(elem);
             }).filter(selector);
         },
+        first: function () {
+            return new Sugar(this.length ? [this[0]] : []);
+        },
+        last: function () {
+            return new Sugar(this.length ? [this[this.length -1]] : []);
+        },
         remove: function () {
             return this.each(function (elem) {
-                if (elem.parentNode !== null) {
-                    elem.parentNode.removeChild(elem);
-                }
+                elem.parentNode.removeChild(elem);
             });
         },
         empty: function () {
@@ -557,7 +573,7 @@
             if (value === undefined) {
                 return this.length ? this[0].scrollLeft : null;
             } else {
-                value = +value;
+                value = +value || 0;
                 return this.each(function (elem) {
                     elem.scrollLeft = value;
                 });
@@ -567,7 +583,7 @@
             if (value === undefined) {
                 return this.length ? this[0].scrollTop : null;
             } else {
-                value = +value;
+                value = +value || 0;
                 return this.each(function (elem) {
                     elem.scrollTop = value;
                 });
@@ -575,6 +591,39 @@
         },
         position: function () {
             return this.length ? {left: this[0].offsetLeft, top: this[0].offsetTop} : null;
+        },
+        replaceWith: function (content) {
+            content = getContent(content);
+            return this.map(function (elem) {
+                elem.parentNode.replaceChild(content.cloneNode(true), elem);
+            });
+        },
+        wrap: function (content) {
+            content = getContent(content);
+            return this.each(function (elem) {
+                var newContent = content.cloneNode(true);
+                newContent.appendChild(elem.parentNode.replaceChild(newContent, elem));
+            });
+        },
+        wrapAll: function (content) {
+            content = getContent(content);
+            return this.each(function (elem, idx) {
+                if (idx) {
+                    content.appendChild(elem);
+                } else {
+                    content.appendChild(elem.parentNode.replaceChild(content, elem));
+                }
+            });
+        },
+        wrapInner: function (content) {
+            content = getContent(content);
+            return this.each(function (elem) {
+                var newContent = content.cloneNode(true);
+                emptyArray.forEach.call(elem.childNodes, function (node) {
+                    newContent.appendChild(node);
+                });
+                elem.appendChild(newContent);
+            });
         }
     };
 
@@ -636,10 +685,12 @@
         var mathodMap = {append: 'beforeend', before: 'beforebegin', prepend: 'afterbegin', after: 'afterend'};
 
         Sugar.prototype[mathod] = function (html) {
-            return this.each(function (target) {
-                if (typeof html === 'string') {
+            if (typeof html === 'string') {
+                return this.each(function (target) {
                     target.insertAdjacentHTML(mathodMap[mathod], html);
-                } else {
+                });
+            } else {
+                return this.each(function (target) {
                     var parent = idx % 2 ? target.parentNode : target,
                         nodeList;
 
@@ -658,8 +709,9 @@
                     emptyArray.forEach.call(nodeList, function (node) {
                         parent.insertBefore(node, target);
                     });
-                }
-            });
+                });
+            }
+
         };
 
         Sugar.prototype[idx % 2 ? 'insert' + (idx -1 ? 'Before' : 'After') : mathod + 'To'] = function (nodeList) {
