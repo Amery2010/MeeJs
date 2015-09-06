@@ -10,12 +10,13 @@
     'use strict';
 
     var Sugar, sugar, query, fragment, camelize, dasherize, maybeAddPx,
-        ready, filtered, matches,
+        ready, filtered, expose, matches, iterate, getHeightOrWeight, getHeightOrWeightWithMargin,
         hasClass, addClass, removeClass, toggleClass,
         children, parent, prev, next, siblings,
         queryRE = /^[\#.]?[\w-]+$/,
         singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
         fragmentRE = /^\s*<(\w+|!)[^>]*>/,
+        rdisplayRE = /^(none|table(?!-c[ea]).+)/,
         div = document.createElement('div'),
         table = document.createElement('table'),
         tableRow = document.createElement('tr'),
@@ -98,6 +99,13 @@
         }
     };
 
+    iterate = function iterate(obj, callback, scope) {
+        var key;
+        for (key in obj) {
+            callback.call(scope, obj[key], key, obj);
+        }
+    };
+
     filtered = function filtered(collection, handle) {
         var elems = [];
         collection.each(function (elem) {
@@ -108,6 +116,37 @@
             });
         });
         return new Sugar(elems);
+    };
+
+    getHeightOrWeight = function getHeightOrWeight(elem, type) {
+        if (type === 'Height') {
+            return elem.clientHeight - (elem.style.paddingTop || 0) - (elem.style.paddingBottom || 0);
+        } else {
+            return elem.clientWeight - (elem.style.paddingLeft || 0) - (elem.style.paddingRight || 0);
+        }
+    };
+
+    getHeightOrWeightWithMargin = function getHeightOrWeightWithMargin(elem, type) {
+        if (type === 'Height') {
+            return elem.offsetHeight + (elem.style.marginTop || 0) + (elem.style.marginBottom || 0);
+        } else {
+            return elem.offsetWeight + (elem.style.marginLeft || 0) + (elem.style.marginRight || 0);
+        }
+    };
+
+    expose = function expose(elem, type, callback) {
+        var value;
+        if (rdisplayRE.test(elem.style.display) && elem['offset' + type] === 0) {
+            var before = elem.style.cssText;
+            elem.style.display = 'block';
+            elem.style.position = 'absolute';
+            elem.style.visibility = 'hidden';
+            value = callback(elem, type);
+            elem.style.cssText = before;
+            return value;
+        } else {
+            return callback(elem, type);
+        }
     };
 
     matches = (function () {
@@ -288,6 +327,11 @@
                 this[i] = callback.call(this, this[i], i, this);
             }
             return this;
+        },
+        add: function (selector, context) {
+            return filtered(this, function () {
+                return this.concat(query(selector, context));
+            }.bind(this));
         },
         is: function (selector) {
             var len = this.length;
@@ -533,6 +577,60 @@
             return this.length ? {left: this[0].offsetLeft, top: this[0].offsetTop} : null;
         }
     };
+
+    iterate({Height: 'height', Weight: 'weight'}, function (type, dimension) {
+        [type, 'inner' + dimension, 'outer' + dimension].forEach(function (mathod, idx) {
+            Sugar.prototype[mathod] = function (value) {
+                if (value === undefined || value === true) {
+                    if (this.length) {
+                        var elem = this[0];
+                        if (elem === window) {
+                            return elem['inner' + dimension];
+                        } else if (elem === document) {
+                            return elem.documentElement['scroll' + dimension];
+                        } else {
+                            if (idx) {
+                                if (idx === 1) {
+                                    return expose(elem, type, function () {
+                                        return elem['scroll' + dimension];
+                                    });
+                                } else {
+                                    if (value === true) {
+                                        return expose(elem, type, getHeightOrWeightWithMargin);
+                                    } else {
+                                        return expose(elem, type, function () {
+                                            return elem['offset' + dimension];
+                                        });
+                                    }
+                                }
+                            } else {
+                                return expose(elem, type, getHeightOrWeight);
+                            }
+                        }
+                    } else {
+                        return null;
+                    }
+                } else {
+                    if (idx) {
+                        value = parseFloat(value, 10);
+                        if (idx === 1) {
+                            return this.each(function (elem) {
+                                elem['scroll' + dimension] = value;
+                            });
+                        } else {
+                            return this.each(function (elem) {
+                                elem['offset' + dimension] = value;
+                            });
+                        }
+                    } else {
+                        return this.each(function (elem) {
+                            elem.style[mathod] = maybeAddPx(value);
+                        });
+                    }
+                }
+            };
+        });
+    });
 
     ['append', 'before', 'prepend', 'after'].forEach(function (mathod, idx) {
         var mathodMap = {append: 'beforeend', before: 'beforebegin', prepend: 'afterbegin', after: 'afterend'};
