@@ -490,6 +490,13 @@
                 });
             }
         },
+        removeProp: function (name) {
+            return this.each(function (elem) {
+                try {
+                    elem[name] = undefined;
+                } catch (ex) {}
+            });
+        },
         val: function (value) {
             if (value === undefined) {
                 if (this.length) {
@@ -623,6 +630,15 @@
                     newContent.appendChild(node);
                 });
                 elem.appendChild(newContent);
+            });
+        },
+        unwrap: function () {
+            return this.each(function (elem) {
+                var docfrag = document.createDocumentFragment();
+                emptyArray.forEach.call(elem.childNodes, function (node) {
+                    docfrag.appendChild(node);
+                });
+                elem.parentNode.replaceChild(docfrag, elem);
             });
         }
     };
