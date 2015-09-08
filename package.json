@@ -1,0 +1,36 @@
+{
+  "name": "sugarjs",
+  "version": "0.5.1",
+  "description": "This is just a modern browser for operation on a simplified DOM syntactic sugar script",
+  "main": "sugar.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://amery2010@github.com/Amery2010/SugarJs.git"
+  },
+  "keywords": [
+    "dom",
+    "Sugar",
+    "SugarJs",
+    "sugar",
+    "sugarjs"
+  ],
+  "author": "Amery",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Amery2010/SugarJs/issues"
+  },
+  "homepage": "https://github.com/Amery2010/SugarJs#readme",
+  "dependencies": {
+    "gulp": "^3.9.0",
+    "gulp-concat": "^2.6.0",
+    "gulp-jshint": "^1.11.2",
+    "gulp-rename": "^1.2.2",
+    "gulp-uglify": "^1.4.0"
+  }
+}
