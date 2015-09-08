@@ -10,7 +10,7 @@
     'use strict';
 
     var Sugar, sugar, query, fragment, camelize, dasherize, maybeAddPx,
-        ready, filtered, expose, matches, iterate, getContent,
+        ready, filtered, expose, matches, iterate, getContent, findData,
         getHeightOrWeight, getHeightOrWeightWithMargin,
         hasClass, addClass, removeClass, toggleClass,
         children, parent, prev, next, siblings,
@@ -18,6 +18,7 @@
         singleTagRE = /^<(\w+)\s*\/?>(?:<\/\1>|)$/,
         fragmentRE = /^\s*<(\w+|!)[^>]*>/,
         rdisplayRE = /^(none|table(?!-c[ea]).+)/,
+        capitalRE = /[A-Z]/g,
         div = document.createElement('div'),
         table = document.createElement('table'),
         tableRow = document.createElement('tr'),
@@ -41,7 +42,7 @@
             'contenteditable': 'contentEditable'
         },
         cssNumber = ['columnCount', 'columns', 'fontWeight', 'lineHeight', 'opacity', 'zIndex', 'zoom'],
-        // specialDom = ['col', 'colGroup', 'frameSet', 'html', 'head', 'style', 'table', 'tBody', 'tFoot', 'tHead', 'title', 'tr'],
+        globalData = [],
         emptyArray = [];
 
     query = function query(selector, context) {
@@ -85,7 +86,7 @@
     };
 
     dasherize = function decamelize(str) {
-        return /[A-Z]/g.test(str) ? str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase() : str;
+        return capitalRE.test(str) ? str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase() : str;
     };
 
     maybeAddPx = function maybeAddPx(name, value) {
@@ -159,6 +160,16 @@
             content = fragment(content);
         }
         return content;
+    };
+
+    findData = function findData(elem) {
+        var result;
+        globalData.forEach(function (item) {
+            if (item.element === elem) {
+                result = item.data;
+            }
+        });
+        return result;
     };
 
     matches = (function () {
@@ -373,6 +384,27 @@
                 return query(selector, elem);
             });
         },
+        closest: function (selector, context) {
+            if (this.length) {
+                var elem = this[0];
+                if (context) {
+                    if (!(context instanceof Sugar)) {
+                        context = sugar(context);
+                    }
+                } else {
+                    context = null;
+                }
+                do {
+                    elem = parent(elem);
+                    if (elem === context || context.indexOf(elem) !== -1) {
+                        return null;
+                    }
+                } while (!matches(elem, selector));
+                return new Sugar([elem]);
+            } else {
+                return null;
+            }
+        },
         hasClass: function (className) {
             var len = this.length;
             while (len--) {
@@ -465,15 +497,6 @@
                 });
             }
         },
-        hasAttr: function (name) {
-            var len = this.length;
-            while (len--) {
-                if (this[len].hasAttribute(name)) {
-                    return true;
-                }
-            }
-            return false;
-        },
         removeAttr: function (name) {
             return this.each(function (elem) {
                 elem.removeAttribute(name);
@@ -517,6 +540,29 @@
             } else {
                 return this.each(function (elem) {
                     elem.value = value;
+                });
+            }
+        },
+        data: function (name, value) {
+            if (value === undefined) {
+                if (this.length) {
+                    var data = findData(this[0]);
+                    if (data === undefined) {
+                        return this[0].getAttribute('data-' + name.replace(capitalRE, '-$1').toLowerCase());
+                    } else {
+                        return data;
+                    }
+                } else {
+                    return null;
+                }
+            } else {
+                return this.each(function (elem) {
+                    var data = findData(elem);
+                    if (data instanceof Object) {
+                        data[name] = value;
+                    } else {
+                        globalData.push({element: elem, data: {name: value}});
+                    }
                 });
             }
         },
