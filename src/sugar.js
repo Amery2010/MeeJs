@@ -577,18 +577,20 @@
                     return this[0].style[name] || window.getComputedStyle(this[0], null).getPropertyValue(name);
                 } else {
                     return this.each(function (elem) {
-                        var currentStyle = elem.style.cssText.split(';'),
+                        var currentStyle = elem.style.cssText.replace(/\s/g, '').split(';'),
                             stylesheet = {}, finalStyle = [], key;
 
                         currentStyle.forEach(function (style) {
-                            style = style.split(':');
-                            stylesheet[style[0]] = style[1];
+                            var index = style.indexOf(':');
+                            stylesheet[style.slice(0, index)] = style.slice(index +1, style.length);
                         });
                         for (key in name) {
                             stylesheet[dasherize(key)] = maybeAddPx(camelize(key), name[key]);
                         }
                         for (key in name) {
-                            finalStyle.push(key + ':' + stylesheet[key]);
+                            if (key && stylesheet[key]) {
+                                finalStyle.push(key + ':' + stylesheet[key]);
+                            }
                         }
                         elem.style.cssText = finalStyle.join(';');
                     });
