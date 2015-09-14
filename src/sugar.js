@@ -585,7 +585,7 @@
                             stylesheet[style[0]] = style[1];
                         });
                         for (key in name) {
-                            stylesheet[dasherize(name[key])] = maybeAddPx(camelize(name[key]), value);
+                            stylesheet[dasherize(key)] = maybeAddPx(camelize(key), name[key]);
                         }
                         for (key in name) {
                             finalStyle.push(key + ':' + stylesheet[key]);
