@@ -10,7 +10,7 @@
     'use strict';
 
     var Sugar, sugar, query, fragment, camelize, dasherize, maybeAddPx,
-        ready, filtered, expose, matches, iterate, getContent, findData,
+        ready, filtered, expose, matches, iterate, getContent,
         getHeightOrWeight, getHeightOrWeightWithMargin,
         hasClass, addClass, removeClass, toggleClass,
         children, parent, prev, next, siblings,
@@ -42,7 +42,6 @@
             'contenteditable': 'contentEditable'
         },
         cssNumber = ['columnCount', 'columns', 'fontWeight', 'lineHeight', 'opacity', 'zIndex', 'zoom'],
-        globalData = [],
         emptyArray = [];
 
     query = function query(selector, context) {
@@ -160,16 +159,6 @@
             content = fragment(content);
         }
         return content;
-    };
-
-    findData = function findData(elem) {
-        var result;
-        globalData.forEach(function (item) {
-            if (item.element === elem) {
-                result = item.data;
-            }
-        });
-        return result;
     };
 
     matches = (function () {
@@ -546,23 +535,13 @@
         data: function (name, value) {
             if (value === undefined) {
                 if (this.length) {
-                    var data = findData(this[0]);
-                    if (data === undefined) {
-                        return this[0].getAttribute('data-' + name.replace(capitalRE, '-$1').toLowerCase());
-                    } else {
-                        return data;
-                    }
+                    return this[0].dataset[name];
                 } else {
                     return null;
                 }
             } else {
                 return this.each(function (elem) {
-                    var data = findData(elem);
-                    if (data instanceof Object) {
-                        data[name] = value;
-                    } else {
-                        globalData.push({element: elem, data: {name: value}});
-                    }
+                    elem.dataset[name] = value;
                 });
             }
         },
@@ -577,18 +556,20 @@
                     return this[0].style[name] || window.getComputedStyle(this[0], null).getPropertyValue(name);
                 } else {
                     return this.each(function (elem) {
-                        var currentStyle = elem.style.cssText.split(';'),
+                        var currentStyle = elem.style.cssText.replace(/\s/g, '').split(';'),
                             stylesheet = {}, finalStyle = [], key;
 
                         currentStyle.forEach(function (style) {
-                            style = style.split(':');
-                            stylesheet[style[0]] = style[1];
+                            var index = style.indexOf(':');
+                            stylesheet[style.slice(0, index)] = style.slice(index +1, style.length);
                         });
                         for (key in name) {
-                            stylesheet[dasherize(name[key])] = maybeAddPx(camelize(name[key]), value);
+                            stylesheet[dasherize(key)] = maybeAddPx(camelize(key), name[key]);
                         }
                         for (key in name) {
-                            finalStyle.push(key + ':' + stylesheet[key]);
+                            if (key && stylesheet[key]) {
+                                finalStyle.push(key + ':' + stylesheet[key]);
+                            }
                         }
                         elem.style.cssText = finalStyle.join(';');
                     });

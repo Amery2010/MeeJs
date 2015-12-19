@@ -10,7 +10,7 @@
     'use strict';
 
     var Sugar, sugar, query, fragment, camelize, dasherize, maybeAddPx,
-        ready, filtered, expose, matches, iterate, getContent, findData,
+        ready, filtered, expose, matches, iterate, getContent,
         getHeightOrWeight, getHeightOrWeightWithMargin,
         hasClass, addClass, removeClass, toggleClass,
         children, parent, prev, next, siblings,
@@ -42,7 +42,6 @@
             'contenteditable': 'contentEditable'
         },
         cssNumber = ['columnCount', 'columns', 'fontWeight', 'lineHeight', 'opacity', 'zIndex', 'zoom'],
-        globalData = [],
         emptyArray = [];
 
     query = function query(selector, context) {
@@ -160,16 +159,6 @@
             content = fragment(content);
         }
         return content;
-    };
-
-    findData = function findData(elem) {
-        var result;
-        globalData.forEach(function (item) {
-            if (item.element === elem) {
-                result = item.data;
-            }
-        });
-        return result;
     };
 
     matches = (function () {
@@ -546,23 +535,13 @@
         data: function (name, value) {
             if (value === undefined) {
                 if (this.length) {
-                    var data = findData(this[0]);
-                    if (data === undefined) {
-                        return this[0].getAttribute('data-' + name.replace(capitalRE, '-$1').toLowerCase());
-                    } else {
-                        return data;
-                    }
+                    return this[0].dataset[name];
                 } else {
                     return null;
                 }
             } else {
                 return this.each(function (elem) {
-                    var data = findData(elem);
-                    if (data instanceof Object) {
-                        data[name] = value;
-                    } else {
-                        globalData.push({element: elem, data: {name: value}});
-                    }
+                    elem.dataset[name] = value;
                 });
             }
         },
