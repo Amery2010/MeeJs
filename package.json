@@ -1,8 +1,8 @@
 {
-  "name": "sugarjs",
+  "name": "meejs",
   "version": "0.5.1",
   "description": "This is just a modern browser for operation on a simplified DOM syntactic sugar script",
-  "main": "sugar.js",
+  "main": "mee.js",
   "directories": {
     "test": "test"
   },
@@ -11,21 +11,21 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://amery2010@github.com/Amery2010/SugarJs.git"
+    "url": "git+https://amery2010@github.com/Amery2010/MeeJs.git"
   },
   "keywords": [
     "dom",
-    "Sugar",
-    "SugarJs",
-    "sugar",
-    "sugarjs"
+    "Mee",
+    "MeeJs",
+    "mee",
+    "meejs"
   ],
   "author": "Amery",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Amery2010/SugarJs/issues"
+    "url": "https://github.com/Amery2010/MeeJs/issues"
   },
-  "homepage": "https://github.com/Amery2010/SugarJs#readme",
+  "homepage": "https://github.com/Amery2010/MeeJs#readme",
   "dependencies": {
     "gulp": "^3.9.0",
     "gulp-concat": "^2.6.0",

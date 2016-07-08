@@ -1,5 +1,5 @@
 /**
- * For Build SugarJs
+ * For Build MeeJs
  *
  * @namespace Gulp
  * @auhor Amery
@@ -11,19 +11,19 @@ var gulp = require('gulp'),
     rename = require('gulp-rename'),
     jshint = require('gulp-jshint');
 
-gulp.task('uglify', function () {
+gulp.task('build', function () {
     'use strict';
-    gulp.src(['./src/sugar.js'])
-        .pipe(concat('sugar.js'))
+    gulp.src(['./src/*'])
+        .pipe(concat('mee.js'))
         .pipe(gulp.dest('./'))
         .pipe(uglify())
-        .pipe(rename('sugar.min.js'))
+        .pipe(rename('mee.min.js'))
         .pipe(gulp.dest('./'));
 });
 
 gulp.task('check', ['uglify'], function () {
     'use strict';
-    gulp.src('./sugar.js')
+    gulp.src('./mee.js')
         .pipe(jshint())
         .pipe(jshint.reporter('default'));
 });
