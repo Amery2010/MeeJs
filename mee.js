@@ -1,7 +1,7 @@
 /**
- * 这只是一个面向现代浏览器关于简化 DOM 操作的一份语法糖工具库
+ * This is just a modern browser for operation on a simplified DOM syntactic sugar script
  *
- * @namespace MeeJs
+ * @namespace SugarJs
  * @auhor Amery
  * @version v0.5.1
  */
@@ -9,7 +9,7 @@
 ;(function (window, document, undefined) {
     'use strict';
 
-    var Mee, mee, query, fragment, camelize, dasherize, maybeAddPx,
+    var Sugar, sugar, query, fragment, camelize, dasherize, maybeAddPx,
         ready, filtered, expose, matches, iterate, getContent,
         getHeightOrWeight, getHeightOrWeightWithMargin,
         hasClass, addClass, removeClass, toggleClass,
@@ -116,7 +116,7 @@
                 }
             });
         });
-        return new Mee(elems);
+        return new Sugar(elems);
     };
 
     getHeightOrWeight = function getHeightOrWeight(elem, type) {
@@ -153,7 +153,7 @@
     };
 
     getContent = function getContent(content) {
-        if (content instanceof Mee) {
+        if (content instanceof Sugar) {
             content = content[0];
         } else if (typeof content === 'string') {
             content = fragment(content);
@@ -293,7 +293,7 @@
         }
     }());
 
-    Mee = function Mee(query) {
+    Sugar = function Sugar(query) {
         var len = query.length;
 
         this.length = len;
@@ -302,7 +302,7 @@
         }
     };
 
-    Mee.prototype = {
+    Sugar.prototype = {
         forEach: emptyArray.forEach,
         reduce: emptyArray.reduce,
         push: emptyArray.push,
@@ -311,7 +311,7 @@
         concat: emptyArray.concat,
         splice: emptyArray.splice,
         slice: function () {
-            return new Mee(emptyArray.slice.apply(this, arguments));
+            return new Sugar(emptyArray.slice.apply(this, arguments));
         },
         get: function (idx) {
             if (idx === undefined) {
@@ -359,7 +359,7 @@
         },
         filter: function (selector) {
             if (selector !== undefined) {
-                return new Mee(emptyArray.filter.call(this,
+                return new Sugar(emptyArray.filter.call(this,
                     typeof selector === 'function' ? selector : function (elem) {
                         return matches(elem, selector);
                     })
@@ -377,8 +377,8 @@
             if (this.length) {
                 var elem = this[0];
                 if (context) {
-                    if (!(context instanceof Mee)) {
-                        context = mee(context);
+                    if (!(context instanceof Sugar)) {
+                        context = sugar(context);
                     }
                 } else {
                     context = null;
@@ -389,7 +389,7 @@
                         return null;
                     }
                 } while (!matches(elem, selector));
-                return new Mee([elem]);
+                return new Sugar([elem]);
             } else {
                 return null;
             }
@@ -444,10 +444,10 @@
             }).filter(selector);
         },
         first: function () {
-            return new Mee(this.length ? [this[0]] : []);
+            return new Sugar(this.length ? [this[0]] : []);
         },
         last: function () {
-            return new Mee(this.length ? [this[this.length -1]] : []);
+            return new Sugar(this.length ? [this[this.length -1]] : []);
         },
         remove: function () {
             return this.each(function (elem) {
@@ -672,7 +672,7 @@
 
     iterate({Height: 'height', Weight: 'weight'}, function (type, dimension) {
         [type, 'inner' + dimension, 'outer' + dimension].forEach(function (mathod, idx) {
-            Mee.prototype[mathod] = function (value) {
+            Sugar.prototype[mathod] = function (value) {
                 if (value === undefined || value === true) {
                     if (this.length) {
                         var elem = this[0];
@@ -727,7 +727,7 @@
     ['append', 'before', 'prepend', 'after'].forEach(function (mathod, idx) {
         var mathodMap = {append: 'beforeend', before: 'beforebegin', prepend: 'afterbegin', after: 'afterend'};
 
-        Mee.prototype[mathod] = function (html) {
+        Sugar.prototype[mathod] = function (html) {
             if (typeof html === 'string') {
                 return this.each(function (target) {
                     target.insertAdjacentHTML(mathodMap[mathod], html);
@@ -737,7 +737,7 @@
                     var parent = idx % 2 ? target.parentNode : target,
                         nodeList;
 
-                    if (html instanceof Mee) {
+                    if (html instanceof Sugar) {
                         nodeList = emptyArray.map.call(html, function (node) {
                             return node.cloneNode(true);
                         });
@@ -757,9 +757,9 @@
 
         };
 
-        Mee.prototype[idx % 2 ? 'insert' + (idx -1 ? 'Before' : 'After') : mathod + 'To'] = function (nodeList) {
-            if (!(nodeList instanceof Mee)) {
-                nodeList = new Mee(nodeList.length ? nodeList : [nodeList]);
+        Sugar.prototype[idx % 2 ? 'insert' + (idx -1 ? 'Before' : 'After') : mathod + 'To'] = function (nodeList) {
+            if (!(nodeList instanceof Sugar)) {
+                nodeList = new Sugar(nodeList.length ? nodeList : [nodeList]);
             }
 
 			nodeList[mathod](this);
@@ -767,16 +767,16 @@
 		};
     });
 
-    mee = function mee(selector, context) {
+    sugar = function sugar(selector, context) {
         if (!selector) {
-            return new Mee(emptyArray);
+            return new Sugar(emptyArray);
         }
 
         if (context) {
             if (typeof context === 'string') {
-                return new Mee(query(selector, context));
+                return new Sugar(query(selector, context));
             } else {
-                context = context instanceof Mee ? context : new Mee(context);
+                context = context instanceof Sugar ? context : new Sugar(context);
                 return context.find(selector);
             }
         }
@@ -784,25 +784,25 @@
         if (typeof selector === 'string') {
             selector = selector.trim();
             if (selector[0] === '<' && fragmentRE.test(selector)) {
-                return new Mee(fragment(selector));
+                return new Sugar(fragment(selector));
             } else {
-                return new Mee(query(selector));
+                return new Sugar(query(selector));
             }
-        } else if (selector instanceof Mee) {
+        } else if (selector instanceof Sugar) {
             return selector;
         } else if (typeof selector === 'function') {
             return ready(selector);
         } else if (emptyArray.isArray(selector)) {
-            return new Mee(selector);
+            return new Sugar(selector);
         } else {
-            return new Mee([selector]);
+            return new Sugar([selector]);
         }
     };
 
-    mee.fn = Mee.prototype;
+    sugar.fn = Sugar.prototype;
 
-    window.mee = mee;
+    window.sugar = sugar;
     if (!window.$) {
-        window.$ = mee;
+        window.$ = sugar;
     }
 }(window, document));

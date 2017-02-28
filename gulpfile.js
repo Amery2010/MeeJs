@@ -21,7 +21,7 @@ gulp.task('build', function () {
         .pipe(gulp.dest('./'));
 });
 
-gulp.task('check', ['uglify'], function () {
+gulp.task('check', ['build'], function () {
     'use strict';
     gulp.src('./mee.js')
         .pipe(jshint())
