@@ -1,6 +1,6 @@
 {
   "name": "meejs",
-  "version": "0.5.1",
+  "version": "1.0.0",
   "description": "This is just a modern browser for operation on a simplified DOM syntactic sugar script",
   "main": "mee.js",
   "directories": {
@@ -27,10 +27,16 @@
   },
   "homepage": "https://github.com/Amery2010/MeeJs#readme",
   "dependencies": {
-    "gulp": "^3.9.0",
-    "gulp-concat": "^2.6.0",
-    "gulp-jshint": "^1.11.2",
-    "gulp-rename": "^1.2.2",
-    "gulp-uglify": "^1.4.0"
+    "babel-preset-es2015": "^6.22.0",
+    "del": "^2.2.2",
+    "eslint": "^3.16.1",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-rollup": "^2.11.0"
+  },
+  "devDependencies": {
+    "gulp-sourcemaps": "^2.4.1",
+    "gulp-uglify": "^2.0.1",
+    "gulp-watch": "^4.3.11"
   }
 }
