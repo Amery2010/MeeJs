@@ -1,12 +1,10 @@
 import { Queue } from './core/queue.js';
 import { query, queryAll } from './core/selector.js';
 
-const GLOBAL = this;
-
 class Mee {
   constructor({ global, modules = {} }) {
     if (global) {
-      GLOBAL.Mee = Mee;
+      global.Mee = Mee;
     }
     if (modules.length > 0) {
       Mee.use(modules);
